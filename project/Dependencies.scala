@@ -10,6 +10,7 @@ object Dependencies {
 
   lazy val http4sServer = "org.http4s" %% "http4s-blaze-server" % "0.23.9"
   lazy val http4sClient = "org.http4s" %% "http4s-blaze-client" % "0.23.9"
+  lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % "0.23.9"
 
   lazy val http4sEndpointsServer = "org.endpoints4s" %% "http4s-server" % "8.0.0"
   lazy val http4sEndpointsClient = "org.endpoints4s"  %% "http4s-client" % "5.0.0"

@@ -21,9 +21,20 @@ lazy val config = project.in(file("base/config"))
       fs2,
       logCatsSlf4,
       http4sServer,
-      http4sEndpointsServer
+      http4sEndpointsServer,
+      //http4sDsl
     ),
     Universal / packageName := "config"
+  )
+
+lazy val user = project.in(file("base/user"))
+  .enablePlugins(DockerPlugin)
+  .enablePlugins(JavaAppPackaging)
+  .settings(options)
+  .settings(
+    name := "User",
+    version := "0.1",
+    Universal / packageName := "user"
   )
 
 lazy val deck_game_server = project.in(file("deck_game_server"))
@@ -36,7 +47,7 @@ lazy val deck_game_server = project.in(file("deck_game_server"))
     libraryDependencies ++= Seq(),
     Universal / packageName := "deck_game_server",
   )
-  .dependsOn(config)
+  .dependsOn(config, user)
 
 val options = scalacOptions ++= Seq(
   "-language:higherKinds",

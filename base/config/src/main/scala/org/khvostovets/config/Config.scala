@@ -7,10 +7,10 @@ import pureconfig.generic.DerivedConfigReader
 import pureconfig.generic.semiauto.deriveReader
 import shapeless.Lazy
 
-trait WithConfigCodec[T] {
+trait ConfigCodec[T] {
   implicit def codec(implicit reader: Lazy[DerivedConfigReader[T]]): ConfigReader[T] = deriveReader[T]
 }
 
 object ConfigHelpers {
-  def createConfig[CR: ConfigReader : ClassTag](): CR = ConfigSource.default.loadOrThrow[CR]
+  def createConfig[T: ConfigReader : ClassTag](): T = ConfigSource.default.loadOrThrow[T]
 }

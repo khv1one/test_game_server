@@ -1,0 +1,47 @@
+package org.khvostovets.deck_game_server.message
+
+trait InputMessage {
+  val user: String
+}
+
+trait GameMessage extends InputMessage {
+  val game: String
+}
+
+case class Help(user: String)                                 extends InputMessage
+case class ListGames(user: String)                            extends InputMessage
+case class InvalidInput(user: String, text: String)           extends InputMessage
+case class DisconnectAll(user: String)                        extends InputMessage
+case class UserToLobby(user: String, game: String)            extends GameMessage
+case class EnterGameLobbyQueue(user: String, game: String)    extends GameMessage
+case class UsersInGame(user: String, game: String)            extends GameMessage
+case class Disconnect(user: String, game: String)             extends GameMessage
+
+object MessageParser {
+
+  def parse(user: String, text: String): InputMessage =
+    splitFirstTwoWords(text) match {
+      case ("/help", _, _)     => Help(user)
+      case ("/start", game, _) => UserToLobby(user, game)
+      case ("/games", _, _)    => ListGames(user)
+      case ("/users", game, _) => UsersInGame(user, game)
+      case (s"/$cmd", _, _)    => InvalidInput(user, s"unknown command - $cmd")
+      case _                   => InvalidInput(user, "unknown command")
+    }
+
+  private def splitFirstWord(text: String): (String, String) = {
+    val trimmedText = text.trim
+    val firstSpace  = trimmedText.indexOf(' ')
+    if (firstSpace < 0)
+      (trimmedText, "")
+    else
+      (trimmedText.substring(0, firstSpace), trimmedText.substring(firstSpace + 1).trim)
+  }
+
+  private def splitFirstTwoWords(text: String): (String, String, String) = {
+    val (first, intermediate) = splitFirstWord(text)
+    val (second, rest)        = splitFirstWord(intermediate)
+
+    (first, second, rest)
+  }
+}
