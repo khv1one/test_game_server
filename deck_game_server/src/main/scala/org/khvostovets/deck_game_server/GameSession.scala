@@ -1,15 +1,15 @@
 package org.khvostovets.deck_game_server
 
 import org.khvostovets.deck_game_server.game.Game
-import org.khvostovets.user.User
 
 import java.util.UUID
 
-case class GameSession[+T <: Game](
+case class GameSession[F[_], +T <: Game](
   uuid: UUID,
-  users: Seq[User]
+  users: Seq[String]
 )
 
 object GameSession {
-  def apply[T <: Game](users: Seq[User], uuid: UUID = UUID.randomUUID) = new GameSession[T](uuid, users)
+  def apply[F[_], T <: Game](users: Seq[String], uuid: UUID = UUID.randomUUID) = new GameSession[F, T](uuid, users)
 }
+

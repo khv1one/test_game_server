@@ -8,25 +8,27 @@ trait GameMessage extends InputMessage {
   val game: String
 }
 
-case class Help(user: String)                                 extends InputMessage
-case class ListGames(user: String)                            extends InputMessage
-case class InvalidInput(user: String, text: String)           extends InputMessage
-case class DisconnectAll(user: String)                        extends InputMessage
-case class UserToLobby(user: String, game: String)            extends GameMessage
-case class EnterGameLobbyQueue(user: String, game: String)    extends GameMessage
-case class UsersInGame(user: String, game: String)            extends GameMessage
-case class Disconnect(user: String, game: String)             extends GameMessage
+trait SessionMessage extends GameMessage {
+  val session: String
+}
+
+case class Help(user: String)                                                 extends InputMessage
+case class ListGames(user: String)                                            extends InputMessage
+case class InvalidInput(user: String, text: String)                           extends InputMessage
+case class Disconnect(user: String)                                        extends InputMessage
+case class EnterToLobby(user: String, game: String)                           extends GameMessage
+case class UsersInSession(user: String, game: String, session: String)        extends SessionMessage
 
 object MessageParser {
 
   def parse(user: String, text: String): InputMessage =
     splitFirstTwoWords(text) match {
-      case ("/help", _, _)     => Help(user)
-      case ("/start", game, _) => UserToLobby(user, game)
-      case ("/games", _, _)    => ListGames(user)
-      case ("/users", game, _) => UsersInGame(user, game)
-      case (s"/$cmd", _, _)    => InvalidInput(user, s"unknown command - $cmd")
-      case _                   => InvalidInput(user, "unknown command")
+      case ("/help", _, _)           => Help(user)
+      case ("/start", game, _)       => EnterToLobby(user, game)
+      case ("/games", _, _)          => ListGames(user)
+      case ("/users", game, session) => UsersInSession(user, game, session)
+      case (s"/$cmd", _, _)          => InvalidInput(user, s"unknown command - $cmd")
+      case _                         => InvalidInput(user, "unknown command")
     }
 
   private def splitFirstWord(text: String): (String, String) = {

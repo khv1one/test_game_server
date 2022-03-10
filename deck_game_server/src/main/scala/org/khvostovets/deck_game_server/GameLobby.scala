@@ -1,25 +1,32 @@
 package org.khvostovets.deck_game_server
 
-import cats.implicits.catsSyntaxOptionId
+import cats.effect.Async
+import cats.implicits.{catsSyntaxOptionId, toFlatMapOps, toFunctorOps}
 import org.khvostovets.deck_game_server.game.Game
-import org.khvostovets.user.User
+import org.khvostovets.deck_game_server.repo.LobbyRepoAlg
 
-case class GameLobby[+T <: Game](
-  users: Set[User] = Set()
+case class GameLobby[F[_] : Async, +T <: Game](
+  users: LobbyRepoAlg[F, String],
+  lobbySize: Int
 ) {
 
-  def enqueueUser(user: User): (GameLobby[T], Option[GameSession[T]]) = {
-    val newMembers = users + user
-
-    if (newMembers.size >= 2) { // TODO
-      val (usersToGame, tail) = newMembers.splitAt(2)
-      (copy(tail), GameSession[T](usersToGame.toSeq).some)
-    } else {
-      (copy(users + user), None)
-    }
+  def enqueueUser(user: String): F[Option[GameSession[F, Game]]] = {
+    users
+      .append(user)
+      .flatMap { _ =>
+        users.catOff(lobbySize).map { usersHead =>
+          if (usersHead.size >= lobbySize) {
+            GameSession[F, T](usersHead.toSeq).some
+          } else {
+            None
+          }
+        }
+      }
   }
 }
 
 object GameLobby {
-  def apply[T <: Game]() = new GameLobby[T]()
+  def apply[F[_] : Async, T <: Game](lobbySize: Int): GameLobby[F, T] = {
+    new GameLobby[F, T](LobbyRepoAlg.InMemory[F, String](), lobbySize)
+  }
 }

@@ -8,7 +8,7 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.{Close, Text}
 import org.http4s.{HttpRoutes, StaticFile}
-import org.khvostovets.deck_game_server.message.{DisconnectAll, InputMessage, MessageParser, OutputMessage}
+import org.khvostovets.deck_game_server.message.{Disconnect, InputMessage, MessageParser, OutputMessage}
 import org.typelevel.log4cats.Logger
 
 class ServerRoutes[F[_] : Async](
@@ -37,13 +37,13 @@ class ServerRoutes[F[_] : Async](
       }
 
       def processInput(wsfStream: Stream[F, WebSocketFrame]): Stream[F, Unit] = {
-        val parsedWebSocketInput: Stream[F, InputMessage] =
-          wsfStream
-            .collect {
-              case Text(text, _) => MessageParser.parse(user, text)
-              case Close(_) => DisconnectAll(user)
-            }
-        parsedWebSocketInput.through(input.publish)
+        wsfStream
+          .collect {
+            case Text(text, _) => MessageParser.parse(user, text)
+            case Close(_) => Disconnect(user)
+          }
+          .evalTap(msg => L.info(s"message: $msg"))
+          .through(input.publish)
       }
 
       val inputPipe: Pipe[F, WebSocketFrame, Unit] = processInput

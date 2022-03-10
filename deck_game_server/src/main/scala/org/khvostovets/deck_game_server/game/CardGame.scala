@@ -2,12 +2,11 @@ package org.khvostovets.deck_game_server.game
 
 import java.util.UUID
 
-case class CardGame(
-  uuid: UUID = CardGame.uuid,
-  name: String = CardGame.name
-) extends Game
+abstract class CardGame() extends Game
 
 object CardGame extends Game {
   implicit val uuid: UUID = UUID.randomUUID()
-  implicit val name: String = "Card Game"
+  implicit val name: String = "card1"
+
+  implicit val lobbySize: Int = 2
 }

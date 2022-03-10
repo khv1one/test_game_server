@@ -34,7 +34,11 @@ lazy val user = project.in(file("base/user"))
   .settings(
     name := "User",
     version := "0.1",
-    Universal / packageName := "user"
+    Universal / packageName := "user",
+    libraryDependencies ++= Seq(
+      cats,
+      catsEffect,
+    )
   )
 
 lazy val deck_game_server = project.in(file("deck_game_server"))
