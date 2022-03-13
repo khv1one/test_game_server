@@ -9,7 +9,7 @@ import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
 import org.khvostovets.deck_game_server.config.Config
 import org.khvostovets.deck_game_server.game.{CardGame, DiceGame, Game}
-import org.khvostovets.deck_game_server.message.{Disconnect, GameMessage, InputMessage, OutputMessage}
+import org.khvostovets.deck_game_server.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
 import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
@@ -42,7 +42,7 @@ object ServerApplication extends IOApp{
                   .traverse(_.handle(msg))
                   .map(_.flatten)
 
-              case msg: GameMessage =>
+              case msg: LobbyMessage =>
                 games
                   .get(msg.game)
                   .map(_.handle(msg))

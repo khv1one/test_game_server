@@ -48,7 +48,7 @@ object SessionRepoAlg {
                   if (sessions.isEmpty) {
                     sessionsByUserId - user
                   } else {
-                    sessionsByUserId + (user -> (sessions - sessionToDelete))
+                    sessionsByUserId + (user -> sessions)
                   }
                 }
               }

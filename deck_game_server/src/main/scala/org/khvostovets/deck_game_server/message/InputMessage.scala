@@ -4,20 +4,21 @@ trait InputMessage {
   val user: String
 }
 
-trait GameMessage extends InputMessage {
+trait LobbyMessage extends InputMessage {
   val game: String
 }
 
-trait SessionMessage extends GameMessage {
+trait SessionMessage extends LobbyMessage {
   val session: String
 }
 
 case class Help(user: String)                                                 extends InputMessage
 case class ListGames(user: String)                                            extends InputMessage
 case class InvalidInput(user: String, text: String)                           extends InputMessage
-case class Disconnect(user: String)                                        extends InputMessage
-case class EnterToLobby(user: String, game: String)                           extends GameMessage
+case class Disconnect(user: String)                                           extends InputMessage
+case class EnterToLobby(user: String, game: String)                           extends LobbyMessage
 case class UsersInSession(user: String, game: String, session: String)        extends SessionMessage
+case class GameActionMessage(user: String, game: String, session: String, action: String)    extends SessionMessage
 
 object MessageParser {
 
@@ -27,7 +28,7 @@ object MessageParser {
       case ("/start", game, _)       => EnterToLobby(user, game)
       case ("/games", _, _)          => ListGames(user)
       case ("/users", game, session) => UsersInSession(user, game, session)
-      case (s"/$cmd", _, _)          => InvalidInput(user, s"unknown command - $cmd")
+      case (s"/$cmd", game, session) => GameActionMessage(user, game, session, cmd)
       case _                         => InvalidInput(user, "unknown command")
     }
 

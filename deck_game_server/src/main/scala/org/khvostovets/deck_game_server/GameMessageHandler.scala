@@ -1,5 +1,6 @@
 package org.khvostovets.deck_game_server
 
+import cats.data.OptionT
 import cats.effect.Async
 import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTraverseOps}
 import org.khvostovets.deck_game_server.game.Game
@@ -20,14 +21,24 @@ class GameMessageHandler[F[_] : Async, +T <: Game](
       userToLobby(msg.user).map(SendToUser(msg.user, s"You has been added to game $game queue") +: _)
 
     case UsersInSession(user, _, sessionId) =>
-      val messages: F[OutputMessage] = sessionRepo
-        .getBySessionId(UUID.fromString(sessionId))
-        .map(
-          _.map(session => SendToUser(user, (session.users.toSet - user + s"$user(you)").mkString("Users:\n", "\n", "")))
-            .getOrElse(SendToUser(user, s"Game session $sessionId not found"))
-        )
+      val messages: F[OutputMessage] =
+        OptionT(sessionRepo.getBySessionId(UUID.fromString(sessionId)))
+          .map(session => SendToUser(user, session.users.toList.mkString("Users:\n", "\n", "")))
+          .getOrElse(SendToUser(user, s"Game session $sessionId not found"))
 
       messages.map(Seq(_))
+
+    case GameActionMessage(user, _, sessionId, cmd) =>
+      val messages: F[Seq[OutputMessage]] =
+        sessionRepo
+          .getBySessionId(UUID.fromString(sessionId))
+          .flatMap(_.map(_.play(GameAction(cmd, user))).getOrElse((false, Seq.empty[OutputMessage]).pure[F]))
+          .flatMap { case (isFinish, messages) =>
+            if (isFinish) sessionRepo.removeBySessionId(UUID.fromString(sessionId)).map(_ => messages)
+            else messages.pure[F]
+          }
+
+      messages
 
     case Disconnect(user) =>
       sessionRepo.getByUserId(user)
@@ -53,13 +64,14 @@ class GameMessageHandler[F[_] : Async, +T <: Game](
     gameLobby
       .enqueueUser(user)
       .flatMap { sessionO =>
-        sessionO.map { session =>
+        sessionO.map { case (session, sessionMessages) =>
           sessionRepo.add(session).map { _ =>
             val messages: Seq[OutputMessage] = session
               .users
-              .map(user => SendToUser(user, s"you has been add to game, sessionID: ${session.uuid}"))
+              .toList
+              .map(user => SendToUser(user, s"You has been added to game, sessionID: ${session.uuid}"))
 
-            messages
+            messages ++ sessionMessages
           }
         }
           .getOrElse(Seq.empty[OutputMessage].pure[F])
