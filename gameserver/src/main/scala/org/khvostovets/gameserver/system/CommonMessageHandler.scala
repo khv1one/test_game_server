@@ -1,6 +1,6 @@
-package org.khvostovets.gameserver
+package org.khvostovets.gameserver.system
 
-import org.khvostovets.gameserver.message.{Help, InputMessage, ListGames, OutputMessage, SendToUser}
+import org.khvostovets.gameserver.message._
 
 case class CommonMessageHandler(
   games: Iterable[String]

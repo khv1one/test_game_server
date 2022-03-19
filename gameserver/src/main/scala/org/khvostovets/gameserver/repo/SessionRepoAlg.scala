@@ -1,26 +1,25 @@
 package org.khvostovets.gameserver.repo
 
 import cats.effect.{Async, Ref}
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFoldableOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.gameserver.GameSession
-import org.khvostovets.gameserver.game.Game
+import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFoldableOps, toFunctorOps}
+import org.khvostovets.gameserver.system.GameSession
 
 import java.util.UUID
 
-trait SessionRepoAlg[F[_], +T <: Game] {
-  def add(session: GameSession[F, Game]): F[Unit]
+trait SessionRepoAlg[F[_], T] {
+  def add(session: GameSession[F, T]): F[Unit]
   def removeBySessionId(sessionId: UUID): F[Unit]
-  def getBySessionId(sessionId: UUID): F[Option[GameSession[F, Game]]]
-  def getByUserId(id: String): F[Set[GameSession[F, Game]]]
+  def getBySessionId(sessionId: UUID): F[Option[GameSession[F, T]]]
+  def getByUserId(id: String): F[Set[GameSession[F, T]]]
 }
 
 object SessionRepoAlg {
-  case class InMemory[F[_] : Async, +T <: Game](
-    sessionByIdRef: Ref[F, Map[UUID, GameSession[F, Game]]],
-    sessionsByUserIdRef: Ref[F, Map[String, Set[GameSession[F, Game]]]]
+  case class InMemory[F[_] : Async, T](
+    sessionByIdRef: Ref[F, Map[UUID, GameSession[F, T]]],
+    sessionsByUserIdRef: Ref[F, Map[String, Set[GameSession[F, T]]]]
   ) extends SessionRepoAlg[F, T] {
 
-    override def add(session: GameSession[F, Game]): F[Unit] = {
+    override def add(session: GameSession[F, T]): F[Unit] = {
       sessionByIdRef
         .update(_ + (session.uuid -> session))
         .flatMap { _ =>
@@ -56,17 +55,17 @@ object SessionRepoAlg {
         }
     }
 
-    override def getBySessionId(id: UUID): F[Option[GameSession[F, Game]]] = sessionByIdRef.get.map(_.get(id))
+    override def getBySessionId(id: UUID): F[Option[GameSession[F, T]]] = sessionByIdRef.get.map(_.get(id))
 
-    override def getByUserId(id: String): F[Set[GameSession[F, Game]]] = {
+    override def getByUserId(id: String): F[Set[GameSession[F, T]]] = {
       sessionsByUserIdRef.get.map(_.getOrElse(id, Set.empty))
     }
   }
 
   object InMemory {
-    def apply[F[_] : Async, T <: Game]() = new InMemory[F, T](
-      Ref.unsafe[F, Map[UUID, GameSession[F, Game]]](Map.empty),
-      Ref.unsafe[F, Map[String, Set[GameSession[F, Game]]]](Map.empty)
+    def apply[F[_] : Async, T]() = new InMemory[F, T](
+      Ref.unsafe[F, Map[UUID, GameSession[F, T]]](Map.empty),
+      Ref.unsafe[F, Map[String, Set[GameSession[F, T]]]](Map.empty)
     )
   }
 }

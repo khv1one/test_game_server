@@ -8,8 +8,9 @@ import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
 import org.khvostovets.gameserver.config.Config
-import org.khvostovets.gameserver.game.{CardGame, DiceGame, Game}
+import org.khvostovets.gameserver.game.{CardGame, DiceGame}
 import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
+import org.khvostovets.gameserver.system.{CommonMessageHandler, GameMessageHandler}
 import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
@@ -66,10 +67,10 @@ object ServerApplication extends IOApp{
 }
 
 object Games {
-  def init[F[_] : Async](implicit L: Logger[F]): Map[String, GameMessageHandler[F, Game]] = {
+  def init[F[_] : Async](implicit L: Logger[F]) = {
     Map(
-      CardGame.name -> GameMessageHandler[F, CardGame](CardGame.lobbySize),
-      DiceGame.name -> GameMessageHandler[F, DiceGame](CardGame.lobbySize)
+      CardGame.staticInfo.name -> GameMessageHandler[F, CardGame](2),
+      DiceGame.staticInfo.name -> GameMessageHandler[F, DiceGame](2)
     )
   }
 }
