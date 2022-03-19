@@ -1,11 +1,11 @@
-package org.khvostovets.deck_game_server
+package org.khvostovets.gameserver
 
 import cats.data.OptionT
 import cats.effect.Async
 import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.deck_game_server.game.Game
-import org.khvostovets.deck_game_server.message._
-import org.khvostovets.deck_game_server.repo.SessionRepoAlg
+import org.khvostovets.gameserver.game.Game
+import org.khvostovets.gameserver.message._
+import org.khvostovets.gameserver.repo.SessionRepoAlg
 import org.typelevel.log4cats.Logger
 
 import java.util.UUID

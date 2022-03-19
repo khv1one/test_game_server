@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server.message
+package org.khvostovets.gameserver.message
 
 trait GameAction {
   def user: String

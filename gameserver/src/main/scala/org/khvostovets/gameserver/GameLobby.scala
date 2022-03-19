@@ -1,11 +1,11 @@
-package org.khvostovets.deck_game_server
+package org.khvostovets.gameserver
 
 import cats.data.NonEmptyList
 import cats.effect.Async
 import cats.implicits.{catsSyntaxOptionId, toFlatMapOps, toFunctorOps}
-import org.khvostovets.deck_game_server.game.Game
-import org.khvostovets.deck_game_server.message.OutputMessage
-import org.khvostovets.deck_game_server.repo.LobbyRepoAlg
+import org.khvostovets.gameserver.game.Game
+import org.khvostovets.gameserver.message.OutputMessage
+import org.khvostovets.gameserver.repo.LobbyRepoAlg
 
 case class GameLobby[F[_] : Async, +T <: Game](
   users: LobbyRepoAlg[F, String],

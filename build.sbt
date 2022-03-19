@@ -41,15 +41,15 @@ lazy val user = project.in(file("base/user"))
     )
   )
 
-lazy val deck_game_server = project.in(file("deck_game_server"))
+lazy val gameServer = project.in(file("gameserver"))
   .enablePlugins(DockerPlugin)
   .enablePlugins(JavaAppPackaging)
   .settings(options)
   .settings(
-    name := "Deck Game Server",
+    name := "Game Server",
     version := "0.1",
     libraryDependencies ++= Seq(),
-    Universal / packageName := "deck_game_server",
+    Universal / packageName := "gameserver",
   )
   .dependsOn(config, user)
 

@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server.config
+package org.khvostovets.gameserver.config
 
 import org.khvostovets.config.ConfigCodec
 

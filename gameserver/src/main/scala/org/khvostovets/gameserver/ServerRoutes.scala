@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server
+package org.khvostovets.gameserver
 
 import cats.effect.Async
 import fs2.concurrent.Topic
@@ -8,7 +8,7 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
 import org.http4s.websocket.WebSocketFrame.{Close, Text}
 import org.http4s.{HttpRoutes, StaticFile}
-import org.khvostovets.deck_game_server.message.{Disconnect, InputMessage, MessageParser, OutputMessage}
+import org.khvostovets.gameserver.message.{Disconnect, InputMessage, MessageParser, OutputMessage}
 import org.typelevel.log4cats.Logger
 
 class ServerRoutes[F[_] : Async](

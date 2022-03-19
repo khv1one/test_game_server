@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server
+package org.khvostovets.gameserver
 
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
@@ -7,9 +7,9 @@ import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
-import org.khvostovets.deck_game_server.config.Config
-import org.khvostovets.deck_game_server.game.{CardGame, DiceGame, Game}
-import org.khvostovets.deck_game_server.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
+import org.khvostovets.gameserver.config.Config
+import org.khvostovets.gameserver.game.{CardGame, DiceGame, Game}
+import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
 import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}

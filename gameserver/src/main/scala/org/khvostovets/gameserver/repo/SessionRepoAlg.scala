@@ -1,9 +1,9 @@
-package org.khvostovets.deck_game_server.repo
+package org.khvostovets.gameserver.repo
 
 import cats.effect.{Async, Ref}
 import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFoldableOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.deck_game_server.GameSession
-import org.khvostovets.deck_game_server.game.Game
+import org.khvostovets.gameserver.GameSession
+import org.khvostovets.gameserver.game.Game
 
 import java.util.UUID
 

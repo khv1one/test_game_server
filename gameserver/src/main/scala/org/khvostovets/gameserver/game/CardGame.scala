@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server.game
+package org.khvostovets.gameserver.game
 
 import java.util.UUID
 

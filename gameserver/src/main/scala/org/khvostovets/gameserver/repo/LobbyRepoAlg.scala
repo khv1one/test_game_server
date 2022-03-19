@@ -1,4 +1,4 @@
-package org.khvostovets.deck_game_server.repo
+package org.khvostovets.gameserver.repo
 
 import cats.effect.{Async, Ref}
 import cats.implicits.toFunctorOps
