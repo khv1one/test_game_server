@@ -1,37 +1,33 @@
 package org.khvostovets.user
 
 import cats.effect.{Async, Ref}
-import cats.implicits.toFunctorOps
-
-import java.util.UUID
+import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
 
 trait UserRepoAlg[F[_]] {
-  def getByUUID(uuid: UUID): F[Option[User]]
   def getByName(name: String): F[Option[User]]
-  def addUser(user: User): F[Unit]
+  def addUser(user: User): F[Boolean]
   def removeUser(user: User): F[Unit]
 }
 
 object UserRepoAlg {
   case class InMemory[F[_] : Async](
-    users: Ref[F, Set[User]]
+    usersByName: Ref[F, Map[String, User]]
   ) extends UserRepoAlg[F] {
 
-    override def getByUUID(uuid: UUID): F[Option[User]] = {
-      users.get.map(_.find(_.id == uuid))
+    override def getByName(name: String): F[Option[User]] = usersByName.get.map(_.get(name))
+
+    override def addUser(user: User): F[Boolean] = {
+      getByName(user.name)
+        .flatMap { userO =>
+          userO
+            .fold(usersByName.update(_ + (user.name -> user)).map(_ => true))(_ => false.pure[F])
+        }
     }
 
-    override def getByName(name: String): F[Option[User]] = {
-      users.get.map(_.find(_.name == name))
-    }
-
-    override def addUser(user: User): F[Unit] = users.update(_ + user)
-
-    override def removeUser(user: User): F[Unit] = users.update(_ - user)
+    override def removeUser(user: User): F[Unit] = usersByName.update(_ - user.name)
   }
 
   object InMemory {
-    def apply[F[_] : Async]() = new InMemory[F](Ref.unsafe[F, Set[User]](Set.empty[User]))
+    def apply[F[_] : Async]() = new InMemory[F](Ref.unsafe[F, Map[String, User]](Map.empty))
   }
 }
-

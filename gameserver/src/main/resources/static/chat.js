@@ -14,8 +14,8 @@ var chat = {}; // Namespace
 	chat.initPage = function () {
 		document.getElementById(chat.ENTRY_ID).focus();
 
-		chat.writeOutput('Initializing GameServer client.');
-		chat.writeOutput('Enter your username:');
+		chat.writeOutput('Initializing GameServer client.', false, "Admin");
+		chat.writeOutput('Enter your username:', false, "Admin");
 	};
 
     chat.connect = function() {
@@ -24,8 +24,8 @@ var chat = {}; // Namespace
 
         chat.ws = new WebSocket(url.href);
         chat.ws.onopen = function(evt) {
-            chat.writeOutput('Connection established');
-            chat.writeOutput('Type \'/help\' for a list of commands');
+            chat.writeOutput('Connection established', false, "Admin");
+            chat.writeOutput('Type \'/help\' for a list of commands', false, "Admin");
         };
 
         chat.ws.onclose = function(evt) {
@@ -35,7 +35,7 @@ var chat = {}; // Namespace
         chat.ws.onmessage = function(evt) {
             // KeepAlive messages have no content
             if (evt.data !== '') {
-                chat.writeOutput(evt.data);
+                chat.writeOutput(evt.data, false, "Other"); // ?
             }
             else {
                 console.debug('KeepAlive received');
@@ -43,7 +43,7 @@ var chat = {}; // Namespace
         };
 
         chat.ws.onerror = function(evt) {
-            chat.writeOutput('There was a communications error, check the console for details');
+            chat.writeOutput('There was a communications error, check the console for details', false, "Admin");
             console.error("WebSocket Error", evt)
         }
     };
@@ -69,6 +69,8 @@ var chat = {}; // Namespace
     				chat.ws.send(sEntry);
                 }
 			}
+
+            chat.writeOutput(sEntry, true, "Me");
 		}
 	};
 
@@ -85,20 +87,30 @@ var chat = {}; // Namespace
 		return ('\n' === String.fromCharCode(keynum) || '\r' === String.fromCharCode(keynum));
 	};
 
-	chat.writeOutput = function (sOutput) {
-		var oOutput, sPadding;
-		oOutput = document.getElementById(chat.OUTPUT_ID);
-
-		// Get a spacer unless we are the first entry
-		sPadding = '\n';
-		if (oOutput.value.length === 0) {
-			sPadding = '';
-		}
-
-		// Append the output to the text area
-		oOutput.value += sPadding + sOutput;
-
-		// Scroll the text into view
-		oOutput.scrollTop = oOutput.scrollHeight;
+	chat.writeOutput = function (sOutput, isMe, name) {
+        document.getElementById('output').innerHTML += isMe
+            ? `
+                <div class="wrapper me">
+                    <div class="message color-me">
+                        <p>${sOutput}</p>
+                        <span class="time-left">11:00</span>
+                    </div>
+                    <div class="circle">
+                        ${name.substring(0, 1)}
+                    </div>
+                </div>
+            `
+            : `
+                <div class="wrapper other">
+                    <div class="circle">
+                        ${name.substring(0, 1)}
+                    </div>
+                    <div class="message color-other">
+                        <p>${sOutput}</p>
+                        <span class="time-right">11:00</span>
+                    </div>
+                </div>
+            `;
+        document.getElementById('output').scrollTop = document.getElementById('output').scrollHeight;
 	};
 }());
