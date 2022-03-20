@@ -40,9 +40,9 @@ class ServerRoutes[F[_] : Async](
             val user = User(name)
 
             userRepo.addUser(user).flatMap(_ => Ok(user.asJson))
-          } (user =>
+          } { user =>
             Ok(user.asJson)
-          )
+          }
         }
 
     case GET -> Root / "ws" / userName =>

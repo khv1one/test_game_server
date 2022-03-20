@@ -1,7 +1,8 @@
 package org.khvostovets.gameserver.repo
 
+import cats.Parallel
 import cats.effect.{Async, Ref}
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFoldableOps, toFunctorOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFlatMapOps, toFoldableOps, toFunctorOps}
 import org.khvostovets.gameserver.system.GameSession
 
 import java.util.UUID
@@ -63,9 +64,13 @@ object SessionRepoAlg {
   }
 
   object InMemory {
-    def apply[F[_] : Async, T]() = new InMemory[F, T](
-      Ref.unsafe[F, Map[UUID, GameSession[F, T]]](Map.empty),
-      Ref.unsafe[F, Map[String, Set[GameSession[F, T]]]](Map.empty)
-    )
+    def apply[F[_] : Async : Parallel, T](): F[InMemory[F, T]] = {
+      (
+        Ref.of[F, Map[UUID, GameSession[F, T]]](Map.empty),
+        Ref.of[F, Map[String, Set[GameSession[F, T]]]](Map.empty)
+      ).parTupled.map { case (sessionByIdRef, sessionsByUserIdRef) =>
+        new InMemory[F, T](sessionByIdRef, sessionsByUserIdRef)
+      }
+    }
   }
 }

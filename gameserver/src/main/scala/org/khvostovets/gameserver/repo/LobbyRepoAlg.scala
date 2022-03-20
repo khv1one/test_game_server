@@ -29,6 +29,8 @@ object LobbyRepoAlg {
   }
 
   object InMemory {
-    def apply[F[_] : Async, T]() = new InMemory[F, T](Ref.unsafe[F, List[T]](List.empty))
+    def apply[F[_] : Async, T](): F[InMemory[F, T]] = {
+      Ref.of[F, List[T]](List.empty).map(new InMemory[F, T](_))
+    }
   }
 }

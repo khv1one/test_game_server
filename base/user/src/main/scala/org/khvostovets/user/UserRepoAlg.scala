@@ -18,9 +18,12 @@ object UserRepoAlg {
 
     override def addUser(user: User): F[Boolean] = {
       getByName(user.name)
-        .flatMap { userO =>
-          userO
-            .fold(usersByName.update(_ + (user.name -> user)).map(_ => true))(_ => false.pure[F])
+        .flatMap {
+          _.fold(
+            usersByName.update(_ + (user.name -> user)).map(_ => true)
+          )(_ =>
+            false.pure[F]
+          )
         }
     }
 
@@ -28,6 +31,8 @@ object UserRepoAlg {
   }
 
   object InMemory {
-    def apply[F[_] : Async]() = new InMemory[F](Ref.unsafe[F, Map[String, User]](Map.empty))
+    def apply[F[_] : Async](): F[InMemory[F]] = {
+      Ref.of[F, Map[String, User]](Map.empty).map(new InMemory[F](_))
+    }
   }
 }

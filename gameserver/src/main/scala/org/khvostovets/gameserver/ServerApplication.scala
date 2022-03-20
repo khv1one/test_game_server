@@ -1,8 +1,9 @@
 package org.khvostovets.gameserver
 
+import cats.Parallel
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits.{catsSyntaxApplicativeId, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFunctorOps, toTraverseOps}
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
@@ -21,14 +22,14 @@ object ServerApplication extends IOApp{
     implicit val conf: Config = createConfig[Config]()
     implicit def logger[F]: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-    val userRepo = UserRepoAlg.InMemory[IO]()
-
-    val games = Games.init[IO]
-    val commonProcessor = CommonMessageHandler(games.keys)
-
     for {
+      userRepo <- UserRepoAlg.InMemory[IO]()
+
       inputTopic <- Topic[IO, InputMessage]
       outputTopic <- Topic[IO, OutputMessage]
+
+      games <- Games.init[IO]
+      commonProcessor = CommonMessageHandler(games.keys)
 
       exitCode <- {
         val httpStream = ServerStream.stream[IO](inputTopic, outputTopic, userRepo)
@@ -67,11 +68,17 @@ object ServerApplication extends IOApp{
 }
 
 object Games {
-  def init[F[_] : Async](implicit L: Logger[F]) = {
-    Map(
-      CardGame.staticInfo.name -> GameMessageHandler[F, CardGame](2),
-      DiceGame.staticInfo.name -> GameMessageHandler[F, DiceGame](2)
-    )
+  def init[F[_] : Async : Parallel](implicit L: Logger[F]) = {
+
+    (
+      GameMessageHandler[F, CardGame](2),
+      GameMessageHandler[F, DiceGame](2)
+    ).parTupled.map { case (cardHandler, diceHandler) =>
+      Map(
+        CardGame.staticInfo.name -> cardHandler,
+        DiceGame.staticInfo.name -> diceHandler
+      )
+    }
   }
 }
 

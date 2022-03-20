@@ -1,8 +1,9 @@
 package org.khvostovets.gameserver.system
 
+import cats.Parallel
 import cats.data.OptionT
 import cats.effect.Async
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
 import org.khvostovets.gameserver.game.{GameAction, GameCreator, GameStaticInfo, TurnBaseGame}
 import org.khvostovets.gameserver.message._
 import org.khvostovets.gameserver.repo.SessionRepoAlg
@@ -79,7 +80,14 @@ class GameMessageHandler[F[_] : Async, T : GameCreator : TurnBaseGame](
 }
 
 object GameMessageHandler {
-  def apply[F[_] : Async, T : GameCreator : GameStaticInfo : TurnBaseGame](lobbySize: Int)(implicit L: Logger[F]): GameMessageHandler[F, T] = {
-    new GameMessageHandler[F, T](GameLobby[F, T](lobbySize), SessionRepoAlg.InMemory())
+  def apply[F[_] : Async : Parallel, T : GameCreator : GameStaticInfo : TurnBaseGame](
+    lobbySize: Int
+  )(implicit L: Logger[F]): F[GameMessageHandler[F, T]] = {
+    (
+      GameLobby[F, T](lobbySize),
+      SessionRepoAlg.InMemory[F, T]()
+    ).parTupled.map { case (lobby, sessionsByUserIdRef) =>
+      new GameMessageHandler[F, T](lobby, sessionsByUserIdRef)
+    }
   }
 }

@@ -2,6 +2,7 @@ package org.khvostovets.gameserver.system
 
 import cats.data.NonEmptyList
 import cats.effect.{Async, Ref}
+import cats.implicits.toFunctorOps
 import org.khvostovets.gameserver.game.{GameAction, GameCreator, TurnBaseGame}
 import org.khvostovets.gameserver.message.OutputMessage
 
@@ -26,9 +27,10 @@ object GameSession {
   def apply[F[_] : Async, T : GameCreator : TurnBaseGame](
     users: NonEmptyList[String],
     uuid: UUID = UUID.randomUUID
-  ): (GameSession[F, T], Seq[OutputMessage]) = {
+  ): F[(GameSession[F, T], Seq[OutputMessage])] = {
     val (state, messages) = GameCreator[T].apply(users)
 
-    (new GameSession(uuid, users, Ref.unsafe[F, T](state)), messages)
+    Ref.of[F, T](state)
+      .map(gameState => (new GameSession(uuid, users, gameState), messages))
   }
 }
