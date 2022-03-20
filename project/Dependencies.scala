@@ -2,6 +2,8 @@ import sbt._
 
 object Dependencies {
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.11"
+  lazy val mockitoCore = "org.mockito" % "mockito-core" % "4.3.1"
+  lazy val mockitoScala = "org.mockito" % "mockito-scala-scalatest_2.12" % "1.17.5"
 
   lazy val redisson = "org.redisson" % "redisson" % "3.16.8"
 
@@ -16,7 +18,7 @@ object Dependencies {
   lazy val http4sEndpointsClient = "org.endpoints4s"  %% "http4s-client" % "6.1.0"
 
   lazy val cats = "org.typelevel" %% "cats-core" % "2.7.0"
-  lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.5"
+  lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.3.6"
 
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % "0.17.1"
 

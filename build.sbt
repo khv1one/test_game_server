@@ -10,17 +10,10 @@ lazy val config = project.in(file("base/config"))
     name := "Config",
     version := "0.1",
     libraryDependencies ++= Seq(
-      logback,
       redisson,
       cats,
       catsEffect,
       pureConfig,
-      fs2,
-      logCatsSlf4,
-      http4sServer,
-      http4sEndpointsServer,
-      http4sCirce
-      //http4sDsl
     ),
     Universal / packageName := "config"
   )
@@ -39,6 +32,7 @@ lazy val user = project.in(file("base/user"))
       circe,
       circeGeneric,
       circeGenericExtras,
+      scalaTest % Test,
     )
   )
 
@@ -49,7 +43,17 @@ lazy val gameServer = project.in(file("gameserver"))
   .settings(
     name := "Game Server",
     version := "0.1",
-    libraryDependencies ++= Seq(),
+    libraryDependencies ++= Seq(
+      logback,
+      logCatsSlf4,
+      fs2,
+      http4sServer,
+      http4sEndpointsServer,
+      http4sCirce,
+      scalaTest % Test,
+      mockitoCore % Test,
+      //mockitoScala % Test,
+    ),
     Universal / packageName := "gameserver",
   )
   .dependsOn(config, user)

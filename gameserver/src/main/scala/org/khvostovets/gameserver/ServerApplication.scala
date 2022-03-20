@@ -3,13 +3,13 @@ package org.khvostovets.gameserver
 import cats.Parallel
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFunctorOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps, toTraverseOps}
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
 import org.khvostovets.gameserver.config.Config
-import org.khvostovets.gameserver.game.{CardGame, DiceGame}
+import org.khvostovets.gameserver.game.card.CardGame
 import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
 import org.khvostovets.gameserver.system.{CommonMessageHandler, GameMessageHandler}
 import org.khvostovets.user.UserRepoAlg
@@ -28,7 +28,7 @@ object ServerApplication extends IOApp{
       inputTopic <- Topic[IO, InputMessage]
       outputTopic <- Topic[IO, OutputMessage]
 
-      games <- Games.init[IO]
+      games <- Games.init[IO]()
       commonProcessor = CommonMessageHandler(games.keys)
 
       exitCode <- {
@@ -68,15 +68,14 @@ object ServerApplication extends IOApp{
 }
 
 object Games {
-  def init[F[_] : Async : Parallel](implicit L: Logger[F]) = {
-
+  def init[F[_] : Async : Parallel]() = {
     (
-      GameMessageHandler[F, CardGame](2),
-      GameMessageHandler[F, DiceGame](2)
-    ).parTupled.map { case (cardHandler, diceHandler) =>
+      GameMessageHandler[F, CardGame[F]](2),
+      //GameMessageHandler[F, DiceGame[F]](2)
+    ).map { case (cardHandler) =>
       Map(
-        CardGame.staticInfo.name -> cardHandler,
-        DiceGame.staticInfo.name -> diceHandler
+        CardGame.static.name -> cardHandler,
+        //"dice" -> diceHandler
       )
     }
   }

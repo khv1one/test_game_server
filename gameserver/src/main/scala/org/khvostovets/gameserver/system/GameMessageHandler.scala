@@ -4,19 +4,20 @@ import cats.Parallel
 import cats.data.OptionT
 import cats.effect.Async
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.gameserver.game.{GameAction, GameCreator, GameStaticInfo, TurnBaseGame}
+import org.khvostovets.gameserver.game.{GameAction, GameCreator, TurnBaseGame}
 import org.khvostovets.gameserver.message._
 import org.khvostovets.gameserver.repo.SessionRepoAlg
-import org.typelevel.log4cats.Logger
 
 import java.util.UUID
 
-class GameMessageHandler[F[_] : Async, T : GameCreator : TurnBaseGame](
+class GameMessageHandler[F[_] : Async, T](
   gameLobby: GameLobby[F, T],
   sessionRepo: SessionRepoAlg[F, T]
-)(implicit L: Logger[F]) {
+) {
 
-  def handle(msg: InputMessage): F[Seq[OutputMessage]] = msg match {
+  def handle(
+    msg: InputMessage
+  )(implicit evt: TurnBaseGame[F, T], evc: GameCreator[F, T]): F[Seq[OutputMessage]] = msg match {
     case EnterToLobby(_, game) =>
       userToLobby(msg.user).map(SendToUser(msg.user, s"You has been added to game $game queue") +: _)
 
@@ -60,7 +61,9 @@ class GameMessageHandler[F[_] : Async, T : GameCreator : TurnBaseGame](
       Seq.empty[OutputMessage].pure[F]
   }
 
-  private def userToLobby(user: String): F[Seq[OutputMessage]] = {
+  private def userToLobby(
+    user: String
+  )(implicit evc: GameCreator[F, T]): F[Seq[OutputMessage]] = {
     gameLobby
       .enqueueUser(user)
       .flatMap { sessionO =>
@@ -80,14 +83,12 @@ class GameMessageHandler[F[_] : Async, T : GameCreator : TurnBaseGame](
 }
 
 object GameMessageHandler {
-  def apply[F[_] : Async : Parallel, T : GameCreator : GameStaticInfo : TurnBaseGame](
+  def apply[F[_] : Async : Parallel, T](
     lobbySize: Int
-  )(implicit L: Logger[F]): F[GameMessageHandler[F, T]] = {
+  ): F[GameMessageHandler[F, T]] = {
     (
       GameLobby[F, T](lobbySize),
       SessionRepoAlg.InMemory[F, T]()
-    ).parTupled.map { case (lobby, sessionsByUserIdRef) =>
-      new GameMessageHandler[F, T](lobby, sessionsByUserIdRef)
-    }
+    ).parTupled.map { case (lobby, sessionRepo) => new GameMessageHandler[F, T](lobby, sessionRepo) }
   }
 }

@@ -19,7 +19,7 @@ var chat = {}; // Namespace
 	};
 
     chat.connect = function() {
-        var url = new URL('/ws/' + encodeURI(chat.user), window.location.href);
+        var url = new URL('/ws/' + encodeURI(chat.user.name), window.location.href);
         url.protocol = url.protocol.replace('http', 'ws');
 
         chat.ws = new WebSocket(url.href);
@@ -69,6 +69,7 @@ var chat = {}; // Namespace
                             var json = JSON.parse(xhr.responseText);
 
                             chat.user = {name: json.name, tokens: json.tokens};
+                            console.info("user: " + chat.user);
                             chat.connect();
                         }
                     } else {

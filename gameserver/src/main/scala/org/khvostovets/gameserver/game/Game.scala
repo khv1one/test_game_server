@@ -5,12 +5,12 @@ import org.khvostovets.gameserver.message.OutputMessage
 
 import java.util.UUID
 
-trait GameCreator[T] {
-  def apply: NonEmptyList[String] => (T, Seq[OutputMessage])
+trait GameCreator[F[_], T] {
+  def apply: NonEmptyList[String] => F[(T, Iterable[OutputMessage])]
 }
 
 object GameCreator {
-  def apply[T](implicit ev: GameCreator[T]): GameCreator[T] = ev
+  def apply[F[_], T](implicit ev: GameCreator[F, T]): GameCreator[F, T] = ev
 }
 
 trait GameStaticInfo[T] {
@@ -22,10 +22,10 @@ object GameStaticInfo {
   def apply[T](implicit ev: GameStaticInfo[T]): GameStaticInfo[T] = ev
 }
 
-trait TurnBaseGame[T] {
-  def next: T => GameAction => (T, Seq[OutputMessage])
+trait TurnBaseGame[F[_], T] { self =>
+  def next: T => GameAction => F[(T, Seq[GameResult], Seq[OutputMessage])]
 }
 
 object TurnBaseGame {
-  def apply[T](implicit ev: TurnBaseGame[T]): TurnBaseGame[T] = ev
+  def apply[F[_], T](implicit ev: TurnBaseGame[F, T]): TurnBaseGame[F, T] = ev
 }

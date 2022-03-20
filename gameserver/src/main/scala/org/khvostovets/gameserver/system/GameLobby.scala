@@ -3,16 +3,18 @@ package org.khvostovets.gameserver.system
 import cats.data.NonEmptyList
 import cats.effect.Async
 import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.gameserver.game.{GameCreator, TurnBaseGame}
+import org.khvostovets.gameserver.game.GameCreator
 import org.khvostovets.gameserver.message.OutputMessage
 import org.khvostovets.gameserver.repo.LobbyRepoAlg
 
-case class GameLobby[F[_] : Async, T : GameCreator : TurnBaseGame](
+case class GameLobby[F[_] : Async, T](
   users: LobbyRepoAlg[F, String],
   lobbySize: Int
 ) {
 
-  def enqueueUser(user: String): F[Option[(GameSession[F, T], Seq[OutputMessage])]] = {
+  def enqueueUser(
+    user: String
+  )(implicit evc: GameCreator[F, T]): F[Option[(GameSession[F, T], Iterable[OutputMessage])]] = {
     users
       .append(user)
       .flatMap { _ =>
@@ -28,7 +30,7 @@ case class GameLobby[F[_] : Async, T : GameCreator : TurnBaseGame](
                   }
               }
           } else {
-            Option.empty[(GameSession[F, T], Seq[OutputMessage])].pure[F]
+            Option.empty[(GameSession[F, T], Iterable[OutputMessage])].pure[F]
           }
         }
       }
@@ -36,7 +38,7 @@ case class GameLobby[F[_] : Async, T : GameCreator : TurnBaseGame](
 }
 
 object GameLobby {
-  def apply[F[_] : Async, T : GameCreator : TurnBaseGame](lobbySize: Int): F[GameLobby[F, T]] = {
+  def apply[F[_] : Async, T](lobbySize: Int): F[GameLobby[F, T]] = {
     LobbyRepoAlg.InMemory[F, String]().map(new GameLobby[F, T](_, lobbySize))
   }
 }
