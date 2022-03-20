@@ -31,7 +31,7 @@ object ServerApplication extends IOApp{
       outputTopic <- Topic[IO, OutputMessage]
 
       exitCode <- {
-        val httpStream = ServerStream.stream[IO](inputTopic, outputTopic)
+        val httpStream = ServerStream.stream[IO](inputTopic, outputTopic, userRepo)
         val processingStream = {
 
           inputTopic.subscribe(1000)
@@ -78,12 +78,13 @@ object Games {
 object ServerStream {
   def stream[F[_] : Async](
     inputTopic: Topic[F, InputMessage],
-    outputTopic: Topic[F, OutputMessage]
+    outputTopic: Topic[F, OutputMessage],
+    userRepo: UserRepoAlg[F]
   ) (implicit config: Config, L: Logger[F]): Stream[F, ExitCode] = {
 
     BlazeServerBuilder[F]
       .bindHttp(config.server.port, config.server.host)
-      .withHttpWebSocketApp(new ServerRoutes[F](inputTopic, outputTopic).wsRoutes(_).orNotFound)
+      .withHttpWebSocketApp(new ServerRoutes[F](inputTopic, outputTopic, userRepo).wsRoutes(_).orNotFound)
       .serve
   }
 }

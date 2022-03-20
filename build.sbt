@@ -14,14 +14,12 @@ lazy val config = project.in(file("base/config"))
       redisson,
       cats,
       catsEffect,
-      circeGeneric,
-      pureConfig,
-      circeGenericExtras,
       pureConfig,
       fs2,
       logCatsSlf4,
       http4sServer,
       http4sEndpointsServer,
+      http4sCirce
       //http4sDsl
     ),
     Universal / packageName := "config"
@@ -38,6 +36,9 @@ lazy val user = project.in(file("base/user"))
     libraryDependencies ++= Seq(
       cats,
       catsEffect,
+      circe,
+      circeGeneric,
+      circeGenericExtras,
     )
   )
 

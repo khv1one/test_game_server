@@ -26,6 +26,7 @@ object Dependencies {
   lazy val circeGeneric = "io.circe" %% "circe-generic" % "0.14.1"
   lazy val circeGenericExtras = "io.circe" %% "circe-generic-extras" % "0.14.1"
   lazy val circeParser = "io.circe" %% "circe-parser" % "0.14.1"
+  lazy val http4sCirce = "org.http4s" %% "http4s-circe" % "0.23.10"
 
   lazy val logCatsSlf4 = "org.typelevel" %% "log4cats-slf4j"   % "2.2.0"
 }

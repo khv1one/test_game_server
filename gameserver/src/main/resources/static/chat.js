@@ -50,18 +50,32 @@ var chat = {}; // Namespace
 
 	chat.onEntryKeyPress = function (oCtl, oEvent) {
 		if (chat.isEnterKeyPress(oEvent)) {
-			// Capture the current text as a command
-			var sEntry = oCtl.value.trim();
+
+		    // Capture the current text as a command
+            var sEntry = oCtl.value.trim();
 
 			// Reset the text entry for the next command
 			oCtl.value = '';
 
 			if (chat.user === null && chat.ws === null) {
-				// Set the username first if we still need one
-				if (sEntry.length > 0) {
-					chat.user = sEntry;
-                    chat.connect();
-				}
+
+                var xhr = new XMLHttpRequest();
+                var url = new URL('/user/' + encodeURI(sEntry), window.location.href);
+                xhr.open("POST", url, true);
+
+                xhr.onreadystatechange = function () {
+                    if (xhr.status === 200) {
+                        if (xhr.readyState === 4) {
+                            var json = JSON.parse(xhr.responseText);
+
+                            chat.user = {name: json.name, tokens: json.tokens};
+                            chat.connect();
+                        }
+                    } else {
+                        chat.writeOutput('Unknown error', false, "Admin");
+                    }
+                };
+                xhr.send();
 			}
 			else {
 				// Process the entry
