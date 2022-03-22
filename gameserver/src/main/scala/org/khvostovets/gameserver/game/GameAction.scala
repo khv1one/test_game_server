@@ -6,6 +6,7 @@ sealed trait GameAction {
 
 case class Play(user: String) extends GameAction
 case class Fold(user: String) extends GameAction
+case class Next(user: String) extends GameAction
 case class Unknown(user: String) extends GameAction
 
 object GameAction {
@@ -13,6 +14,7 @@ object GameAction {
     action match {
       case "play" => Play(user)
       case "fold" => Fold(user)
+      case "next" => Next(user)
       case _ => Unknown(user)
     }
   }

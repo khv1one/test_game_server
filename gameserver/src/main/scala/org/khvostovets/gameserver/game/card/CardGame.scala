@@ -7,13 +7,20 @@ import org.khvostovets.gameserver.game._
 import org.khvostovets.gameserver.game.card.deck.Deck
 import org.khvostovets.gameserver.message.{OutputMessage, SendToUser}
 
+trait DecisionApplier[F[_], T] {
+  def setDecision: (T, Map[String, GameAction]) => T
+}
 
-class CardGame[F[_] : Async, T <: CardGame[F, T]](
+object DecisionApplier {
+  def apply[F[_], T](implicit ev: DecisionApplier[F, T]): DecisionApplier[F, T] = ev
+}
+
+abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
   users: NonEmptyList[String],
   usersCards: Map[String, Deck[F]],
   userDecisions: Map[String, GameAction],
   cardHandSize: Int
-)(implicit evc: GameCreator[F, T], evt: TurnBaseGame[F, T], evg: Game[F, T]) extends Game[F, T] {
+)(implicit evc: GameCreator[F, T], evt: TurnBaseGame[F, T], evg: Game[F, T], dsa: DecisionApplier[F, T]) extends Game[F, T] {
 
   def next: GameAction => F[(T, Seq[GameResult], Seq[OutputMessage])] = {
     case action : Play => process(action)
@@ -35,7 +42,7 @@ class CardGame[F[_] : Async, T <: CardGame[F, T]](
       .get(action.user)
       .fold {
         (
-          get(new CardGame(users, usersCards, userDecisions + (action.user -> action), cardHandSize)),
+          DecisionApplier[F, T].setDecision(get(this), userDecisions + (action.user -> action)),
           msgToUserAndOther(action.user, "You chose to play", s"Player ${action.user} has made a decision")
         )
       } { _ =>

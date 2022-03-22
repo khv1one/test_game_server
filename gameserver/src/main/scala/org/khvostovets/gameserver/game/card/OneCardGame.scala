@@ -21,7 +21,9 @@ case class OneCardGame[F[_] : Async](
 object OneCardGame {
   val cardHandSize = 1
 
-  def apply[F[_] : Async](users: NonEmptyList[String], cardHandSize: Int)(implicit evt: TurnBaseGame[F, OneCardGame[F]]): F[(OneCardGame[F], Iterable[OutputMessage])] = {
+  def apply[F[_] : Async](
+    users: NonEmptyList[String]
+  )(implicit evt: TurnBaseGame[F, OneCardGame[F]]): F[(OneCardGame[F], Iterable[OutputMessage])] = {
     Deck
       .createDeckOf52[F]()
       .flatMap {
@@ -58,11 +60,11 @@ object OneCardGame {
 
   implicit def static[F[_]]: GameStaticInfo[OneCardGame[F]] = new GameStaticInfo[OneCardGame[F]] {
     override def uuid: UUID = UUID.randomUUID()
-    override def name: String = "card"
+    override def name: String = "onecard"
   }
 
   implicit def creator[F[_]: Async]: GameCreator[F, OneCardGame[F]] = new GameCreator[F, OneCardGame[F]] {
-    override def apply: NonEmptyList[String] => F[(OneCardGame[F], Iterable[OutputMessage])] = users => OneCardGame[F](users, cardHandSize)
+    override def apply: NonEmptyList[String] => F[(OneCardGame[F], Iterable[OutputMessage])] = users => OneCardGame[F](users)
   }
 
   implicit def game[F[_]]: Game[F, OneCardGame[F]] = new Game[F, OneCardGame[F]] {
@@ -74,6 +76,12 @@ object OneCardGame {
   implicit def turn[F[_]]: TurnBaseGame[F, OneCardGame[F]] = new TurnBaseGame[F, OneCardGame[F]] {
     override def next: OneCardGame[F] => GameAction => F[(OneCardGame[F], Seq[GameResult], Seq[OutputMessage])] = { game =>
       action => game.next(action)
+    }
+  }
+
+  implicit def update[F[_]: Async]: DecisionApplier[F, OneCardGame[F]] = new DecisionApplier[F, OneCardGame[F]] {
+    override def setDecision: (OneCardGame[F], Map[String, GameAction]) => OneCardGame[F] = { case (game, decisions) =>
+      game.copy(userDecisions = decisions)
     }
   }
 }

@@ -3,15 +3,17 @@ package org.khvostovets.gameserver
 import cats.Parallel
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits.{catsSyntaxApplicativeId, toFunctorOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple3Parallel, toFunctorOps, toTraverseOps}
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
 import org.khvostovets.gameserver.config.Config
-import org.khvostovets.gameserver.game.card.TwoCardGame
+import org.khvostovets.gameserver.game.card.{OneCardGame, TwoCardGame}
+import org.khvostovets.gameserver.game.dice.SimpleDiceGame
 import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
-import org.khvostovets.gameserver.system.{CommonMessageHandler, GameMessageHandler}
+import org.khvostovets.gameserver.system.CommonMessageHandler
+import org.khvostovets.gameserver.system.handlers.GameHandler
 import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
@@ -41,13 +43,22 @@ object ServerApplication extends IOApp{
                 games
                   .values
                   .toList
-                  .traverse(_.handle(msg))
+                  .traverse {
+                    case h: GameHandler.OneCard[IO] => h.handle(msg) //TODO: move to MessageParser
+                    case h: GameHandler.TwoCard[IO] => h.handle(msg)
+                    case h: GameHandler.SimpleDice[IO] => h.handle(msg)
+                  }
                   .map(_.flatten)
 
               case msg: LobbyMessage =>
                 games
                   .get(msg.game)
-                  .map(_.handle(msg))
+                  .map {
+                    case h: GameHandler.OneCard[IO] => h.handle(msg) //TODO: move to MessageParser
+                    case h: GameHandler.TwoCard[IO] => h.handle(msg)
+                    case h: GameHandler.SimpleDice[IO] => h.handle(msg)
+                  }
+
                   .getOrElse(Nil.pure[IO])
 
               case msg =>
@@ -70,12 +81,14 @@ object ServerApplication extends IOApp{
 object Games {
   def init[F[_] : Async : Parallel]() = {
     (
-      //GameMessageHandler[F, OneCardGame[F]](2),
-      GameMessageHandler[F, TwoCardGame[F]](2)
-    ).map { case (oneCardHandler) =>
+      GameHandler.OneCard.apply[F](2),
+      GameHandler.TwoCard.apply[F](2),
+      GameHandler.SimpleDice.apply[F](2)
+    ).parTupled.map { case (oneCardHandler, twoCardGame, diceGame) =>
       Map(
-        //OneCardGame.static.name -> oneCardHandler,
-        TwoCardGame.static.name -> oneCardHandler
+        OneCardGame.static.name -> oneCardHandler,
+        TwoCardGame.static.name -> twoCardGame,
+        SimpleDiceGame.static.name -> diceGame
       )
     }
   }
