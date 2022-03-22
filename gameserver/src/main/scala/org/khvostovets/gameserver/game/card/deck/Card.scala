@@ -1,4 +1,4 @@
-package org.khvostovets.gameserver.game.card
+package org.khvostovets.gameserver.game.card.deck
 
 sealed trait Suite
 case object Spade extends Suite

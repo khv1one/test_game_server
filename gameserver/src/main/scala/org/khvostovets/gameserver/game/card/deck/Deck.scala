@@ -1,7 +1,8 @@
-package org.khvostovets.gameserver.game.card
+package org.khvostovets.gameserver.game.card.deck
 
 import cats.effect.{Async, Ref}
-import cats.implicits.{catsSyntaxOptionId, toFlatMapOps, toFunctorOps}
+import cats.implicits.{catsSyntaxOptionId, toFunctorOps}
+import org.khvostovets.gameserver.game.card.deck
 
 import scala.util.Random
 
@@ -40,7 +41,7 @@ object Deck {
   }
 
   def apply[F[_] : Async](ranks: List[Rank], suites: List[Suite]): F[Deck[F]] = {
-    val cards = for(rank <- ranks; suite <- suites) yield Card(rank, suite)
+    val cards = for(rank <- ranks; suite <- suites) yield deck.Card(rank, suite)
 
     Deck(cards)
   }

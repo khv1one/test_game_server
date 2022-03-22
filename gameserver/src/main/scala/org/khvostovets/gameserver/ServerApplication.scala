@@ -9,7 +9,7 @@ import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.khvostovets.config.ConfigHelpers.createConfig
 import org.khvostovets.gameserver.config.Config
-import org.khvostovets.gameserver.game.card.CardGame
+import org.khvostovets.gameserver.game.card.TwoCardGame
 import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
 import org.khvostovets.gameserver.system.{CommonMessageHandler, GameMessageHandler}
 import org.khvostovets.user.UserRepoAlg
@@ -70,12 +70,12 @@ object ServerApplication extends IOApp{
 object Games {
   def init[F[_] : Async : Parallel]() = {
     (
-      GameMessageHandler[F, CardGame[F]](2),
-      //GameMessageHandler[F, DiceGame[F]](2)
-    ).map { case (cardHandler) =>
+      //GameMessageHandler[F, OneCardGame[F]](2),
+      GameMessageHandler[F, TwoCardGame[F]](2)
+    ).map { case (oneCardHandler) =>
       Map(
-        CardGame.static.name -> cardHandler,
-        //"dice" -> diceHandler
+        //OneCardGame.static.name -> oneCardHandler,
+        TwoCardGame.static.name -> oneCardHandler
       )
     }
   }

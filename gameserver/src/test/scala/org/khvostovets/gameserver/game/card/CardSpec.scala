@@ -1,5 +1,6 @@
 package org.khvostovets.gameserver.game.card
 
+import org.khvostovets.gameserver.game.card.deck.{Ace, Card, Diamond, Jack, King, Queen, Two}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

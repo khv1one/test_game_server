@@ -5,6 +5,14 @@ import org.khvostovets.gameserver.message.OutputMessage
 
 import java.util.UUID
 
+trait Game[F[_], T] {
+  def get: Game[F, T] => T
+}
+
+object Game {
+  def apply[F[_], T <: Game[F, T]](implicit ev: Game[F, T]): Game[F, T] = ev
+}
+
 trait GameCreator[F[_], T] {
   def apply: NonEmptyList[String] => F[(T, Iterable[OutputMessage])]
 }

@@ -1,6 +1,6 @@
 package org.khvostovets.gameserver.game
 
-trait GameAction {
+sealed trait GameAction {
   def user: String
 }
 

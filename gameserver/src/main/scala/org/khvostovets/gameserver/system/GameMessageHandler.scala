@@ -4,13 +4,13 @@ import cats.Parallel
 import cats.data.OptionT
 import cats.effect.Async
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple2Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
-import org.khvostovets.gameserver.game.{GameAction, GameCreator, TurnBaseGame}
+import org.khvostovets.gameserver.game.{Game, GameAction, GameCreator, TurnBaseGame}
 import org.khvostovets.gameserver.message._
 import org.khvostovets.gameserver.repo.SessionRepoAlg
 
 import java.util.UUID
 
-class GameMessageHandler[F[_] : Async, T](
+class GameMessageHandler[F[_] : Async, T <: Game[F, T]](
   gameLobby: GameLobby[F, T],
   sessionRepo: SessionRepoAlg[F, T]
 ) {
@@ -83,7 +83,7 @@ class GameMessageHandler[F[_] : Async, T](
 }
 
 object GameMessageHandler {
-  def apply[F[_] : Async : Parallel, T](
+  def apply[F[_] : Async : Parallel, T <: Game[F, T]](
     lobbySize: Int
   ): F[GameMessageHandler[F, T]] = {
     (

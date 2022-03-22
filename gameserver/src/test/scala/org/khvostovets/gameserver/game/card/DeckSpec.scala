@@ -2,6 +2,7 @@ package org.khvostovets.gameserver.game.card
 
 import cats.effect.IO
 import cats.effect.unsafe.IORuntime
+import org.khvostovets.gameserver.game.card.deck.{Ace, Card, Club, Deck, Diamond, Heart, Spade}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
