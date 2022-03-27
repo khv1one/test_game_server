@@ -18,7 +18,7 @@ case class OneCardGame[F[_] : Async](
 ) extends CardGame[F, OneCardGame[F]](users, usersCards, userDecisions, cardHandSize) {
   override def get: Game[F, OneCardGame[F]] => OneCardGame[F] = _ => this
 
-  override val scores: GameScore = GameScore(-2, -5, 5, -10, 10)
+  override val scores: GameScore = GameScore(-1, -3, 3, -10, 10)
 }
 
 object OneCardGame {

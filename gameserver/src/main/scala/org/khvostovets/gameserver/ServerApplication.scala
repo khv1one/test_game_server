@@ -17,7 +17,7 @@ import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
 
-object ServerApplication extends IOApp{
+object ServerApplication extends IOApp {
   override def run(args: List[String]): IO[ExitCode] = {
 
     implicit val conf: Config = createConfig[Config]()

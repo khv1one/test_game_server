@@ -53,7 +53,6 @@ lazy val gameServer = project.in(file("gameserver"))
       http4sCirce,
       scalaTest % Test,
       mockitoCore % Test,
-      //mockitoScala % Test,
     ),
     Universal / packageName := "gameserver",
   )
