@@ -33,6 +33,7 @@ lazy val user = project.in(file("base/user"))
       circeGeneric,
       circeGenericExtras,
       scalaTest % Test,
+      mockitoCore % Test,
     )
   )
 
