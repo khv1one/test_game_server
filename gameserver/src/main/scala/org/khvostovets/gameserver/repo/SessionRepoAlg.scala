@@ -26,9 +26,9 @@ object SessionRepoAlg {
         .flatMap { _ =>
           session.users.toList.traverse_ { user =>
             sessionsByUserIdRef.update { sessionsByUserId =>
-              val userSessions = sessionsByUserId.getOrElse(user, Set.empty)
+              val userSessions = sessionsByUserId.getOrElse(user.name, Set.empty)
 
-              sessionsByUserId + (user -> (userSessions + session))
+              sessionsByUserId + (user.name -> (userSessions + session))
             }
           }
         }
@@ -43,12 +43,12 @@ object SessionRepoAlg {
             .fold(().pure[F]) { sessionToDelete =>
               sessionToDelete.users.traverse_ { user =>
                 sessionsByUserIdRef.update { sessionsByUserId =>
-                  val sessions = sessionsByUserId.getOrElse(user, Set.empty) - sessionToDelete
+                  val sessions = sessionsByUserId.getOrElse(user.name, Set.empty) - sessionToDelete
 
                   if (sessions.isEmpty) {
-                    sessionsByUserId - user
+                    sessionsByUserId - user.name
                   } else {
-                    sessionsByUserId + (user -> sessions)
+                    sessionsByUserId + (user.name -> sessions)
                   }
                 }
               }

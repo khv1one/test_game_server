@@ -5,12 +5,13 @@ import cats.effect.{Async, Ref}
 import cats.implicits.{toFlatMapOps, toFunctorOps}
 import org.khvostovets.gameserver.game.{GameAction, GameCreator, TurnBaseGame}
 import org.khvostovets.gameserver.message.OutputMessage
+import org.khvostovets.user.User
 
 import java.util.UUID
 
 case class GameSession[F[_] : Async, T](
   uuid: UUID,
-  users: NonEmptyList[String],
+  users: NonEmptyList[User],
   gameState: Ref[F, T]
 ) {
 
@@ -33,7 +34,7 @@ case class GameSession[F[_] : Async, T](
 
 object GameSession {
   def apply[F[_] : Async, T](
-    users: NonEmptyList[String],
+    users: NonEmptyList[User],
     uuid: UUID = UUID.randomUUID
   )(implicit evc: GameCreator[F, T]): F[(GameSession[F, T], Iterable[OutputMessage])] = {
     GameCreator[F, T].apply(users).flatMap { case (state, messages) =>

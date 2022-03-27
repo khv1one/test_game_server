@@ -1,7 +1,9 @@
 package org.khvostovets.gameserver.game
 
+import org.khvostovets.user.User
+
 case class GameResult(
-  user: String,
+  user: User,
   score: Int
 ) {
 

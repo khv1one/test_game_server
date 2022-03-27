@@ -3,7 +3,7 @@ package org.khvostovets.gameserver
 import cats.Parallel
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple3Parallel, toFunctorOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple3Parallel, catsSyntaxTuple4Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
@@ -12,8 +12,7 @@ import org.khvostovets.gameserver.config.Config
 import org.khvostovets.gameserver.game.card.{OneCardGame, TwoCardGame}
 import org.khvostovets.gameserver.game.dice.SimpleDiceGame
 import org.khvostovets.gameserver.message.{Disconnect, InputMessage, LobbyMessage, OutputMessage}
-import org.khvostovets.gameserver.system.CommonMessageHandler
-import org.khvostovets.gameserver.system.handlers.GameHandler
+import org.khvostovets.gameserver.system.handlers.{CommonHandler, GameHandler}
 import org.khvostovets.user.UserRepoAlg
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, SelfAwareStructuredLogger}
@@ -24,66 +23,65 @@ object ServerApplication extends IOApp{
     implicit val conf: Config = createConfig[Config]()
     implicit def logger[F]: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
-    for {
-      userRepo <- UserRepoAlg.InMemory[IO]()
+    init[IO]
+  }
 
-      inputTopic <- Topic[IO, InputMessage]
-      outputTopic <- Topic[IO, OutputMessage]
+  def init[F[_] : Async : Parallel](implicit L: Logger[F], config: Config): F[ExitCode] = {
+    (
+      UserRepoAlg.InMemory[F](),
+      Topic[F, InputMessage],
+      Topic[F, OutputMessage],
+      Games.init[F]()
+    ).parTupled.flatMap { case (userRepo, inputTopic, outputTopic, games) =>
+      val commonProcessor = CommonHandler(games.keys)
 
-      games <- Games.init[IO]()
-      commonProcessor = CommonMessageHandler(games.keys)
+      val httpStream = Server.httpStream[F](inputTopic, outputTopic, userRepo)
+      val processingStream = {
+        inputTopic.subscribe(1000)
+          .evalMap {
+            case msg: Disconnect =>
+              games
+                .values
+                .toSeq
+                .traverse {
+                  case h: GameHandler.OneCard[F] => h.handle(msg)
+                  case h: GameHandler.TwoCard[F] => h.handle(msg)
+                  case h: GameHandler.SimpleDice[F] => h.handle(msg)
+                }
+                .map(_.flatten)
 
-      exitCode <- {
-        val httpStream = ServerStream.stream[IO](inputTopic, outputTopic, userRepo)
-        val processingStream = {
+            case msg: LobbyMessage =>
+              games
+                .get(msg.game)
+                .map {
+                  case h: GameHandler.OneCard[F] => h.handle(msg)
+                  case h: GameHandler.TwoCard[F] => h.handle(msg)
+                  case h: GameHandler.SimpleDice[F] => h.handle(msg)
+                }
+                .getOrElse(Seq.empty[OutputMessage].pure[F])
 
-          inputTopic.subscribe(1000)
-            .evalMap {
-              case msg: Disconnect =>
-                games
-                  .values
-                  .toList
-                  .traverse {
-                    case h: GameHandler.OneCard[IO] => h.handle(msg) //TODO: move to MessageParser
-                    case h: GameHandler.TwoCard[IO] => h.handle(msg)
-                    case h: GameHandler.SimpleDice[IO] => h.handle(msg)
-                  }
-                  .map(_.flatten)
+            case msg =>
+              commonProcessor.handle(msg).pure[F]
+          }
+          .flatMap(Stream.emits(_))
+          .through(outputTopic.publish)
+      }
 
-              case msg: LobbyMessage =>
-                games
-                  .get(msg.game)
-                  .map {
-                    case h: GameHandler.OneCard[IO] => h.handle(msg) //TODO: move to MessageParser
-                    case h: GameHandler.TwoCard[IO] => h.handle(msg)
-                    case h: GameHandler.SimpleDice[IO] => h.handle(msg)
-                  }
-
-                  .getOrElse(Nil.pure[IO])
-
-              case msg =>
-                commonProcessor.handle(msg).pure[IO]
-            }
-            .flatMap(Stream.emits)
-            .through(outputTopic.publish)
-        }
-
-        Stream(httpStream, processingStream)
-          .parJoinUnbounded
-          .compile
-          .drain
-          .as(ExitCode.Success)
-
-      }} yield exitCode
+      Stream(httpStream, processingStream)
+        .parJoinUnbounded
+        .compile
+        .drain
+        .as(ExitCode.Success)
+    }
   }
 }
 
 object Games {
   def init[F[_] : Async : Parallel]() = {
     (
-      GameHandler.OneCard.apply[F](2),
-      GameHandler.TwoCard.apply[F](2),
-      GameHandler.SimpleDice.apply[F](2)
+      GameHandler.OneCard[F](2),
+      GameHandler.TwoCard[F](2),
+      GameHandler.SimpleDice[F](2)
     ).parTupled.map { case (oneCardHandler, twoCardGame, diceGame) =>
       Map(
         OneCardGame.static.name -> oneCardHandler,
@@ -94,8 +92,8 @@ object Games {
   }
 }
 
-object ServerStream {
-  def stream[F[_] : Async](
+object Server {
+  def httpStream[F[_] : Async](
     inputTopic: Topic[F, InputMessage],
     outputTopic: Topic[F, OutputMessage],
     userRepo: UserRepoAlg[F]

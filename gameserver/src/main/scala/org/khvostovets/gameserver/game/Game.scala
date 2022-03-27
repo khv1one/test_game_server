@@ -2,6 +2,7 @@ package org.khvostovets.gameserver.game
 
 import cats.data.NonEmptyList
 import org.khvostovets.gameserver.message.OutputMessage
+import org.khvostovets.user.User
 
 import java.util.UUID
 
@@ -14,7 +15,7 @@ object Game {
 }
 
 trait GameCreator[F[_], T] {
-  def apply: NonEmptyList[String] => F[(T, Iterable[OutputMessage])]
+  def apply: NonEmptyList[User] => F[(T, Iterable[OutputMessage])]
 }
 
 object GameCreator {

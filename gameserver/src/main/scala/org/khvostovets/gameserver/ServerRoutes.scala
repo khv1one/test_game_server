@@ -1,7 +1,7 @@
 package org.khvostovets.gameserver
 
 import cats.effect.Async
-import cats.implicits.{catsSyntaxIfM, toFlatMapOps, toFunctorOps}
+import cats.implicits.{toFlatMapOps, toFunctorOps}
 import fs2.concurrent.Topic
 import fs2.{Pipe, Stream}
 import io.circe.syntax.EncoderOps
@@ -56,12 +56,13 @@ class ServerRoutes[F[_] : Async](
 
       def processInput(wsfStream: Stream[F, WebSocketFrame]): Stream[F, Unit] = {
         wsfStream
+          .evalMap(msg => userRepo.getByName(userName).map { userO => (msg, userO) })
           .collect {
-            case Text(text, _) => MessageParser.parse(userName, text)
-            case Close(_) => Disconnect(userName)
+            case (Text(text, _), Some(user)) => MessageParser.parse(user, text)
+            case (Close(_), Some(user)) => Disconnect(user)
           }
-          .evalTap(msg => L.info(s"message: $msg"))
-          .through(input.publish)
+          .evalTap(msg => L.info(msg.toString))
+          .through(a => input.publish(a))
       }
 
       val inputPipe: Pipe[F, WebSocketFrame, Unit] = processInput

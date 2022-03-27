@@ -6,11 +6,12 @@ import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxOptionId, toFunctorOps
 import org.khvostovets.gameserver.game._
 import org.khvostovets.gameserver.game.card.DecisionApplier
 import org.khvostovets.gameserver.message.{OutputMessage, SendToUser}
+import org.khvostovets.user.User
 
 abstract class DiceGame[F[_] : Async, T <: DiceGame[F, T]](
-  users: NonEmptyList[String],
-  userDecisions: Map[String, GameAction],
-)(implicit evc: GameCreator[F, T], evt: TurnBaseGame[F, T], evg: Game[F, T], dsa: DecisionApplier[F, T]) extends Game[F, T] {
+  users: NonEmptyList[User],
+  userDecisions: Map[User, GameAction],
+)(implicit dsa: DecisionApplier[F, T]) extends Game[F, T] {
 
   def next: GameAction => F[(T, Seq[GameResult], Seq[OutputMessage])] = {
     case action : Next => process(action)
@@ -59,19 +60,19 @@ abstract class DiceGame[F[_] : Async, T <: DiceGame[F, T]](
     }
   }
 
-  private def compareUsersMaxCards(users: Seq[String]): F[(Option[String], Seq[String])] = {
+  private def compareUsersMaxCards(users: Seq[User]): F[(Option[User], Seq[User])] = {
     users match {
       case head :: tail =>
-        val ts: Seq[String] = tail
+        val ts: Seq[User] = tail
         (head.some, ts).pure[F]
 
-      case _ => (Option.empty[String], Seq.empty[String]).pure[F]
+      case _ => (Option.empty[User], Seq.empty[User]).pure[F]
     }
   }
 
-  private def msgToUserAndOther(user: String, messageToUser: String, messageToAnotherUsers: String): Seq[SendToUser] = {
+  private def msgToUserAndOther(user: User, messageToUser: String, messageToAnotherUsers: String): Seq[SendToUser] = {
     users.filterNot(_ == user).map(user => SendToUser(user, messageToAnotherUsers)) :+ SendToUser(user, messageToUser)
   }
 
-  override def get: Game[F, T] => T = Game[F, T].get
+  override def get: Game[F, T] => T
 }

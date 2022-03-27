@@ -1,7 +1,9 @@
 package org.khvostovets.gameserver.message
 
+import org.khvostovets.user.User
+
 trait InputMessage {
-  val user: String
+  val user: User
 }
 
 trait LobbyMessage extends InputMessage {
@@ -12,17 +14,17 @@ trait SessionMessage extends LobbyMessage {
   val session: String
 }
 
-case class Help(user: String)                                                 extends InputMessage
-case class ListGames(user: String)                                            extends InputMessage
-case class InvalidInput(user: String, text: String)                           extends InputMessage
-case class Disconnect(user: String)                                           extends InputMessage
-case class EnterToLobby(user: String, game: String)                           extends LobbyMessage
-case class UsersInSession(user: String, game: String, session: String)        extends SessionMessage
-case class GameActionMessage(user: String, game: String, session: String, action: String)    extends SessionMessage
+case class Help(user: User)                                                             extends InputMessage
+case class ListGames(user: User)                                                        extends InputMessage
+case class InvalidInput(user: User, text: String)                                       extends InputMessage
+case class Disconnect(user: User)                                                       extends InputMessage
+case class EnterToLobby(user: User, game: String)                                       extends LobbyMessage
+case class UsersInSession(user: User, game: String, session: String)                    extends SessionMessage
+case class GameActionMessage(user: User, game: String, session: String, action: String) extends SessionMessage
 
 object MessageParser {
 
-  def parse(user: String, text: String): InputMessage =
+  def parse(user: User, text: String): InputMessage =
     splitFirstTwoWords(text) match {
       case ("/help", _, _)           => Help(user)
       case ("/start", game, _)       => EnterToLobby(user, game)

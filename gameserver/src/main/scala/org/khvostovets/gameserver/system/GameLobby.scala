@@ -6,14 +6,15 @@ import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTr
 import org.khvostovets.gameserver.game.{Game, GameCreator}
 import org.khvostovets.gameserver.message.OutputMessage
 import org.khvostovets.gameserver.repo.LobbyRepoAlg
+import org.khvostovets.user.User
 
 case class GameLobby[F[_] : Async, T <: Game[F, T]](
-  users: LobbyRepoAlg[F, String],
+  users: LobbyRepoAlg[F, User],
   lobbySize: Int
 ) {
 
   def enqueueUser(
-    user: String
+    user: User
   )(implicit evc: GameCreator[F, T]): F[Option[(GameSession[F, T], Iterable[OutputMessage])]] = {
     users
       .append(user)
@@ -39,6 +40,6 @@ case class GameLobby[F[_] : Async, T <: Game[F, T]](
 
 object GameLobby {
   def apply[F[_] : Async, T <: Game[F, T]](lobbySize: Int): F[GameLobby[F, T]] = {
-    LobbyRepoAlg.InMemory[F, String]().map(new GameLobby[F, T](_, lobbySize))
+    LobbyRepoAlg.InMemory[F, User]().map(new GameLobby[F, T](_, lobbySize))
   }
 }

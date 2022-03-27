@@ -10,6 +10,7 @@ import org.khvostovets.gameserver.game.{Game, GameAction, GameCreator, TurnBaseG
 import org.khvostovets.gameserver.message._
 import org.khvostovets.gameserver.repo.SessionRepoAlg
 import org.khvostovets.gameserver.system.GameLobby
+import org.khvostovets.user.User
 
 import java.util.UUID
 
@@ -45,7 +46,7 @@ abstract class GameHandler[F[_] : Async, T <: Game[F, T]](
       messages
 
     case Disconnect(user) =>
-      sessionRepo.getByUserId(user)
+      sessionRepo.getByUserId(user.name)
         .flatMap { sessions =>
           sessions.toSeq.flatTraverse { session =>
             sessionRepo
@@ -65,7 +66,7 @@ abstract class GameHandler[F[_] : Async, T <: Game[F, T]](
   }
 
   private def userToLobby(
-    user: String
+    user: User
   )(implicit evc: GameCreator[F, T]): F[Seq[OutputMessage]] = {
     gameLobby
       .enqueueUser(user)

@@ -1,5 +1,7 @@
 package org.khvostovets.gameserver.message
 
+import org.khvostovets.user.User
+
 trait OutputMessage {
   def forUser(targetUser: String): Boolean
   def toString: String
@@ -10,13 +12,18 @@ case class WelcomeUser(user: String) extends OutputMessage {
   override def toString: String = s"Welcome to GameServer example"
 }
 
-case class SendToUser(user: String, text: String) extends OutputMessage {
-  override def forUser(targetUser: String): Boolean = targetUser == user
+case class SendToEndpoint(endpoint: String, text: String) extends OutputMessage {
+  override def forUser(targetUser: String): Boolean = targetUser == endpoint
   override def toString: String = text
 }
 
-case class SendToUsers(users: Set[String], text: String) extends OutputMessage {
-  override def forUser(targetUser: String): Boolean = users.contains(targetUser)
+case class SendToUser(user: User, text: String) extends OutputMessage {
+  override def forUser(targetUser: String): Boolean = targetUser == user.name
+  override def toString: String = text
+}
+
+case class SendToUsers(users: Set[User], text: String) extends OutputMessage {
+  override def forUser(targetUser: String): Boolean = users.map(_.name).contains(targetUser)
   override def toString: String = text
 }
 

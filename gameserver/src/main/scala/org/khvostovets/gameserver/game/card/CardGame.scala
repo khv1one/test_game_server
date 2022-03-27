@@ -6,9 +6,10 @@ import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps, toTr
 import org.khvostovets.gameserver.game._
 import org.khvostovets.gameserver.game.card.deck.Deck
 import org.khvostovets.gameserver.message.{OutputMessage, SendToUser}
+import org.khvostovets.user.User
 
 trait DecisionApplier[F[_], T] {
-  def setDecision: (T, Map[String, GameAction]) => T
+  def setDecision: (T, Map[User, GameAction]) => T
 }
 
 object DecisionApplier {
@@ -16,11 +17,11 @@ object DecisionApplier {
 }
 
 abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
-  users: NonEmptyList[String],
-  usersCards: Map[String, Deck[F]],
-  userDecisions: Map[String, GameAction],
+  users: NonEmptyList[User],
+  usersCards: Map[User, Deck[F]],
+  userDecisions: Map[User, GameAction],
   cardHandSize: Int
-)(implicit evc: GameCreator[F, T], evt: TurnBaseGame[F, T], evg: Game[F, T], dsa: DecisionApplier[F, T]) extends Game[F, T] {
+)(implicit evc: GameCreator[F, T], dsa: DecisionApplier[F, T]) extends Game[F, T] {
 
   def next: GameAction => F[(T, Seq[GameResult], Seq[OutputMessage])] = {
     case action : Play => process(action)
@@ -34,7 +35,7 @@ abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
   private def process(action: GameAction): F[(T, Seq[GameResult], Seq[OutputMessage])] = {
     val (game, playMessages) = play(action)
 
-    game.isEnd.map { case (game, results, messages) => (game, results, messages ++ playMessages)}
+    game.isEnd.map { case (game, results, messages) => (game, results, playMessages ++ messages)}
   }
 
   private def play(action: GameAction): (T, Seq[SendToUser]) = {
@@ -65,36 +66,44 @@ abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
   private def winnerCalculation(): F[(T, Seq[GameResult])] = {
     val (players, folders) =
       userDecisions
-        .foldLeft(Seq.empty[String], Seq.empty[String]) { case ((players, folders), (user, action)) => action match {
+        .foldLeft(Seq.empty[User], Seq.empty[User]) { case ((players, folders), (user, action)) => action match {
           case _ : Play => (players :+ user, folders)
           case _ : Fold => (players, folders :+ user)
+          case _ => (Seq.empty, Seq.empty)
         }}
 
     if (players.isEmpty) {
-      (get(this), folders.map(user => GameResult(user, -2))).pure[F]
+      (get(this), folders.map(user => GameResult(user, scores.draw))).pure[F]
     } else if (players.size == 1) {
-      (get(this), folders.map(user => GameResult(user, -5)) :+ GameResult(players.head, 5)).pure[F]
+      (
+        get(this),
+        folders.map(user => GameResult(user, scores.folderLoser)) :+ GameResult(players.head, scores.folderWinner)
+      ).pure[F]
     } else {
       compareUsersMaxCards(players).flatMap { case (winnerO, losers) =>
 
         winnerO.fold(
           GameCreator[F, T].apply(NonEmptyList.fromList(losers.toList).get)
-            .map { case (game, _) => (get(game), Seq.empty[GameResult]) } //TODO need to customise message when game restart
+            .map { case (game, _) => (get(game), Seq.empty[GameResult]) }
         ) { winner =>
-          (get(this), folders.map(user => GameResult(user, -5)) ++ losers.map(user => GameResult(user, -20)) :+ GameResult(winner, 20)).pure[F]
+          (
+            get(this),
+            folders.map(user => GameResult(user, scores.folderLoser)) ++
+              losers.map(user => GameResult(user, scores.loser)) :+ GameResult(winner, scores.winner)
+          ).pure[F]
         }
       }
     }
   }
 
-  private def compareUsersMaxCards(users: Seq[String], countAcc: Int = 0): F[(Option[String], Seq[String])] = {
+  private def compareUsersMaxCards(users: Seq[User], countAcc: Int = 0): F[(Option[User], Seq[User])] = {
     if (countAcc < cardHandSize) {
       usersCards
         .filter { case (key, _) => users.contains(key)}
         .toList
         .traverse { case (user, deck) =>
           deck.getMaxCard()
-            .map(cardO => (user, cardO.map(_.rank.score).getOrElse(0))) //TODO really? getOrElse(0)?
+            .map(cardO => (user, cardO.map(_.rank.score).getOrElse(0)))
         }
         .flatMap { scoreByUser =>
           val (_, usersWithMaxScores) = scoreByUser.groupBy { case (_, scores) => scores }
@@ -107,21 +116,19 @@ abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
           } else if (usersWithMaxScores.size == 1) {
             (usersWithMaxScores.headOption, users.filterNot(_ == usersWithMaxScores.head)).pure[F]
           } else {
-            (Option.empty[String], Seq.empty[String]).pure[F] //TODO something went wrong
+            (Option.empty[User], Seq.empty[User]).pure[F]
           }
         }
     } else {
-      (Option.empty[String], users).pure[F]
+      (Option.empty[User], users).pure[F]
     }
   }
 
-  private def msgToUserAndOther(user: String, messageToUser: String, messageToAnotherUsers: String): Seq[SendToUser] = {
+  private def msgToUserAndOther(user: User, messageToUser: String, messageToAnotherUsers: String): Seq[SendToUser] = {
     users.filterNot(_ == user).map(user => SendToUser(user, messageToAnotherUsers)) :+ SendToUser(user, messageToUser)
   }
 
-  override def get: Game[F, T] => T = Game[F, T].get
-}
+  override def get: Game[F, T] => T
 
-object CardGame {
-  //TODO deck for games constructors
+  val scores: GameScore
 }
