@@ -3,7 +3,7 @@ package org.khvostovets.gameserver.system
 import cats.data.NonEmptyList
 import cats.effect.{Async, Ref}
 import cats.implicits.{toFlatMapOps, toFunctorOps}
-import org.khvostovets.gameserver.game.{GameAction, GameCreator, TurnBaseGame}
+import org.khvostovets.gameserver.game.{GameAction, GameCreator, GameResult, TurnBaseGame}
 import org.khvostovets.gameserver.message.OutputMessage
 import org.khvostovets.user.User
 
@@ -15,7 +15,7 @@ case class GameSession[F[_] : Async, T](
   gameState: Ref[F, T]
 ) {
 
-  def play(action: GameAction)(implicit ev: TurnBaseGame[F, T]): F[(Boolean, Seq[OutputMessage])] = {
+  def play(action: GameAction)(implicit ev: TurnBaseGame[F, T]): F[(Seq[GameResult], Seq[OutputMessage])] = {
 
     (for {
       state <- gameState.get
@@ -25,7 +25,7 @@ case class GameSession[F[_] : Async, T](
     } yield {
       gameState
         .update(_ => nextState)
-        .map(_ => (results.nonEmpty, messages))
+        .map(_ => (results, messages))
     })
       .flatten
 

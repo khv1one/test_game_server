@@ -3,7 +3,7 @@ package org.khvostovets.gameserver
 import cats.Parallel
 import cats.effect.kernel.Async
 import cats.effect.{ExitCode, IO, IOApp}
-import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple3Parallel, catsSyntaxTuple4Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxTuple3Parallel, toFlatMapOps, toFunctorOps, toTraverseOps}
 import fs2.Stream
 import fs2.concurrent.Topic
 import org.http4s.blaze.server.BlazeServerBuilder
@@ -31,57 +31,60 @@ object ServerApplication extends IOApp{
       UserRepoAlg.InMemory[F](),
       Topic[F, InputMessage],
       Topic[F, OutputMessage],
-      Games.init[F]()
-    ).parTupled.flatMap { case (userRepo, inputTopic, outputTopic, games) =>
-      val commonProcessor = CommonHandler(games.keys)
+    ).parTupled.flatMap { case (userRepo, inputTopic, outputTopic) =>
+      Games.init(userRepo).flatMap { games =>
+        val commonProcessor = CommonHandler(games.keys)
 
-      val httpStream = Server.httpStream[F](inputTopic, outputTopic, userRepo)
-      val processingStream = {
-        inputTopic.subscribe(1000)
-          .evalMap {
-            case msg: Disconnect =>
-              games
-                .values
-                .toSeq
-                .traverse {
-                  case h: GameHandler.OneCard[F] => h.handle(msg)
-                  case h: GameHandler.TwoCard[F] => h.handle(msg)
-                  case h: GameHandler.SimpleDice[F] => h.handle(msg)
-                }
-                .map(_.flatten)
+        val httpStream = Server.httpStream[F](inputTopic, outputTopic, userRepo)
+        val processingStream = {
+          inputTopic.subscribe(1000)
+            .evalMap {
+              case msg: Disconnect =>
+                games
+                  .values
+                  .toSeq
+                  .traverse {
+                    case h: GameHandler.OneCard[F] => h.handle(msg)
+                    case h: GameHandler.TwoCard[F] => h.handle(msg)
+                    case h: GameHandler.SimpleDice[F] => h.handle(msg)
+                  }
+                  .map(_.flatten)
 
-            case msg: LobbyMessage =>
-              games
-                .get(msg.game)
-                .map {
-                  case h: GameHandler.OneCard[F] => h.handle(msg)
-                  case h: GameHandler.TwoCard[F] => h.handle(msg)
-                  case h: GameHandler.SimpleDice[F] => h.handle(msg)
-                }
-                .getOrElse(Seq.empty[OutputMessage].pure[F])
+              case msg: LobbyMessage =>
+                games
+                  .get(msg.game)
+                  .map {
+                    case h: GameHandler.OneCard[F] => h.handle(msg)
+                    case h: GameHandler.TwoCard[F] => h.handle(msg)
+                    case h: GameHandler.SimpleDice[F] => h.handle(msg)
+                  }
+                  .getOrElse(Seq.empty[OutputMessage].pure[F])
 
-            case msg =>
-              commonProcessor.handle(msg).pure[F]
-          }
-          .flatMap(Stream.emits(_))
-          .through(outputTopic.publish)
+              case msg =>
+                commonProcessor.handle(msg).pure[F]
+            }
+            .flatMap(Stream.emits(_))
+            .through(outputTopic.publish)
+        }
+
+        Stream(httpStream, processingStream)
+          .parJoinUnbounded
+          .compile
+          .drain
+          .as(ExitCode.Success)
       }
-
-      Stream(httpStream, processingStream)
-        .parJoinUnbounded
-        .compile
-        .drain
-        .as(ExitCode.Success)
     }
   }
 }
 
 object Games {
-  def init[F[_] : Async : Parallel]() = {
+  def init[F[_] : Async : Parallel](
+    userRepo: UserRepoAlg[F]
+  ) = {
     (
-      GameHandler.OneCard[F](2),
-      GameHandler.TwoCard[F](2),
-      GameHandler.SimpleDice[F](2)
+      GameHandler.OneCard[F](userRepo, 2),
+      GameHandler.TwoCard[F](userRepo, 2),
+      GameHandler.SimpleDice[F](userRepo, 2)
     ).parTupled.map { case (oneCardHandler, twoCardGame, diceGame) =>
       Map(
         OneCardGame.static.name -> oneCardHandler,

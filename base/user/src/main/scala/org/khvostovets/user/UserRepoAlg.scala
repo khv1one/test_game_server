@@ -1,12 +1,13 @@
 package org.khvostovets.user
 
 import cats.effect.{Async, Ref}
-import cats.implicits.{catsSyntaxApplicativeId, toFlatMapOps, toFunctorOps}
+import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxOptionId, toFlatMapOps, toFunctorOps}
 
 trait UserRepoAlg[F[_]] {
   def getByName(name: String): F[Option[User]]
   def addUser(user: User): F[Boolean]
   def removeUser(user: User): F[Unit]
+  def changeUserScores(user: User, scores: Int): F[Option[User]]
 }
 
 object UserRepoAlg {
@@ -28,6 +29,19 @@ object UserRepoAlg {
     }
 
     override def removeUser(user: User): F[Unit] = usersByName.update(_ - user.name)
+
+    override def changeUserScores(user: User, scores: Int): F[Option[User]] = {
+      usersByName
+        .modify { usersByName =>
+          usersByName.get(user.name).fold {
+            (usersByName, Option.empty[User])
+          } { user =>
+            val nUser = user.copy(tokens = user.tokens + scores)
+
+            (usersByName + (nUser.name -> nUser), nUser.some)
+          }
+        }
+    }
   }
 
   object InMemory {
