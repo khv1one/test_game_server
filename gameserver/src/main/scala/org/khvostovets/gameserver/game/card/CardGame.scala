@@ -84,7 +84,7 @@ abstract class CardGame[F[_] : Async, T <: CardGame[F, T]](
 
         winnerO.fold(
           GameCreator[F, T].apply(NonEmptyList.fromList(losers.toList).get)
-            .map { case (game, _) => (get(game), Seq.empty[GameResult]) }
+            .map { case (game, _) => (game, Seq.empty[GameResult]) }
         ) { winner =>
           (
             get(this),

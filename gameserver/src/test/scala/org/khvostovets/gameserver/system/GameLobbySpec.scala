@@ -11,7 +11,7 @@ class GameLobbySpec extends AnyWordSpec with Matchers {
   implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
   "Adding user to lobby" should {
-    val lobby = GameLobby[IO, OneCardGame[IO]](4).unsafeRunSync
+    val lobby = GameLobby[IO, OneCardGame[IO]](4).unsafeRunSync()
 
     "be not create session because not enough users" in {
       lobby.enqueueUser(User("u1")).unsafeRunSync().isEmpty mustBe true

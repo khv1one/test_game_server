@@ -38,8 +38,8 @@ class TwoCardGameSpec extends AnyWordSpec with Matchers with PrivateMethodTester
 
       firstResults.isEmpty mustBe true
       secondResults.size mustBe 2
-      secondResults.contains(GameResult(players.head, -2)) mustBe true
-      secondResults.contains(GameResult(players.last, -2)) mustBe true
+      secondResults.contains(GameResult(players.head, game.scores.draw)) mustBe true
+      secondResults.contains(GameResult(players.last, game.scores.draw)) mustBe true
     }
 
     "play / fold" in {
@@ -49,8 +49,8 @@ class TwoCardGameSpec extends AnyWordSpec with Matchers with PrivateMethodTester
 
       firstResults.isEmpty mustBe true
       secondResults.size mustBe 2
-      secondResults.contains(GameResult(players.head, 5)) mustBe true
-      secondResults.contains(GameResult(players.last, -5)) mustBe true
+      secondResults.contains(GameResult(players.head, game.scores.folderWinner)) mustBe true
+      secondResults.contains(GameResult(players.last, game.scores.folderLoser)) mustBe true
     }
 
     "play / play with user2 winner" in {
@@ -64,8 +64,8 @@ class TwoCardGameSpec extends AnyWordSpec with Matchers with PrivateMethodTester
 
       firstResults.isEmpty mustBe true
       secondResults.size mustBe 2
-      secondResults.contains(GameResult(players.head, -20)) mustBe true
-      secondResults.contains(GameResult(players.last, 20)) mustBe true
+      secondResults.contains(GameResult(players.head, game.scores.loser)) mustBe true
+      secondResults.contains(GameResult(players.last, game.scores.winner)) mustBe true
     }
 
     "play / play with draw and winning with first card" in {
@@ -89,8 +89,8 @@ class TwoCardGameSpec extends AnyWordSpec with Matchers with PrivateMethodTester
       thirdResult.isEmpty mustBe true
       fourthResult.size mustBe 2
 
-      fourthResult.contains(GameResult(players.head, 20)) mustBe true
-      fourthResult.contains(GameResult(players.last, -20)) mustBe true
+      fourthResult.contains(GameResult(players.head, game.scores.winner)) mustBe true
+      fourthResult.contains(GameResult(players.last, game.scores.loser)) mustBe true
     }
 
     "play / play with draw and winning with second card" in {
@@ -114,8 +114,8 @@ class TwoCardGameSpec extends AnyWordSpec with Matchers with PrivateMethodTester
       thirdResult.isEmpty mustBe true
       fourthResult.size mustBe 2
 
-      fourthResult.contains(GameResult(players.head, -20)) mustBe true
-      fourthResult.contains(GameResult(players.last, 20)) mustBe true
+      fourthResult.contains(GameResult(players.head, game.scores.loser)) mustBe true
+      fourthResult.contains(GameResult(players.last, game.scores.winner)) mustBe true
     }
   }
 }

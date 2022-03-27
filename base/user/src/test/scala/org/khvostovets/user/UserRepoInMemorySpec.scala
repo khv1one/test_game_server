@@ -9,7 +9,7 @@ class UserRepoInMemorySpec extends AnyWordSpec with Matchers {
   implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
   "adding new user" should {
-    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync
+    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync()
     val user = User("u1")
 
     "be return true when user unique" in {
@@ -23,7 +23,7 @@ class UserRepoInMemorySpec extends AnyWordSpec with Matchers {
   }
 
   "getting user" should {
-    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync
+    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync()
     val user = User("u1")
 
     "be return none if user is not in repo" in {
@@ -37,7 +37,7 @@ class UserRepoInMemorySpec extends AnyWordSpec with Matchers {
   }
 
   "remove user" should {
-    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync
+    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync()
     val user = User("u1")
     repo.addUser(user).unsafeRunSync()
 
@@ -49,7 +49,7 @@ class UserRepoInMemorySpec extends AnyWordSpec with Matchers {
   }
 
   "changeUserScores" should {
-    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync
+    val repo = UserRepoAlg.InMemory[IO]().unsafeRunSync()
     val user = new User("u1", 100)
     repo.addUser(user).unsafeRunSync()
 
